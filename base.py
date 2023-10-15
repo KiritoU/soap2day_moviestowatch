@@ -190,10 +190,10 @@ class Crawler:
                 post_type=post_type,
             )
 
-            film_data["episodes_data"] = episodes_data
+            # film_data["episodes_data"] = episodes_data
 
-            with open("json/crawled.json", "w") as f:
-                f.write(json.dumps(film_data, indent=4, ensure_ascii=False))
+            # with open("json/crawled.json", "w") as f:
+            #     f.write(json.dumps(film_data, indent=4, ensure_ascii=False))
 
             Moviestowatch(film=film_data, episodes=episodes_data).insert_film()
             # sys.exit(0)
@@ -215,10 +215,56 @@ class Crawler:
 
         return 1
 
+    def get_serie_link_from_episode(self, episode_url: str) -> str:
+        try:
+            soup = self.crawl_soup(episode_url)
+            mvic_info = soup.find("div", class_="mvic-info")
+            p_elements = mvic_info.find_all("p")
+            for p in p_elements:
+                key = p.find("strong").text
+                if "serie" in key.lower():
+                    serie_link = p.find("a").get("href")
+                    return serie_link
+        except Exception as e:
+            print(e)
+            return ""
+
+    def update_episodes_page(self):
+        soup = self.crawl_soup(f"{CONFIG.SOAP2DAY_HOMEPAGE}/episode/")
+        ml_items = soup.find_all("div", class_="ml-item")
+        if not ml_items:
+            return 0
+
+        links = [ml_item.find("a").get("href") for ml_item in ml_items]
+        links = [self.get_serie_link_from_episode(link) for link in links]
+
+        links = list(set(links))
+
+        for link in links:
+            try:
+                if not link:
+                    continue
+
+                href = link
+                if not href.startswith("https://"):
+                    href = CONFIG.SOAP2DAY_HOMEPAGE + href
+
+                slug = href.strip().strip("/").split("/")[-1]
+
+                film_data, episodes_data = self.crawl_film(
+                    slug=slug,
+                    href=href,
+                    post_type=CONFIG.TYPE_TV_SHOWS,
+                )
+                Moviestowatch(film=film_data, episodes=episodes_data).insert_film()
+            except Exception as e:
+                print(e)
+
 
 if __name__ == "__main__":
-    Crawler().crawl_page(url=CONFIG.SOAP2DAY_TVSHOWS_PAGE + "/page/1/")
-    Crawler().crawl_page(
-        url=CONFIG.SOAP2DAY_MOVIES_PAGE + "/page/1/", post_type=CONFIG.TYPE_MOVIE
-    )
+    Crawler().update_episodes_page()
+    # Crawler().crawl_page(url=CONFIG.SOAP2DAY_TVSHOWS_PAGE + "/page/1/")
+    # Crawler().crawl_page(
+    #     url=CONFIG.SOAP2DAY_MOVIES_PAGE + "/page/1/", post_type=CONFIG.TYPE_MOVIE
+    # )
     # Crawler().crawl_page(url=CONFIG.TINYZONETV_MOVIES_PAGE, post_type=CONFIG.TYPE_MOVIE)

@@ -12,6 +12,7 @@ crawler = Crawler()
 if __name__ == "__main__":
     while True:
         try:
+            crawler.update_episodes_page()
             crawler.crawl_page(f"{CONFIG.SOAP2DAY_TVSHOWS_PAGE}/")
             crawler.crawl_page(
                 f"{CONFIG.SOAP2DAY_MOVIES_PAGE}/", post_type=CONFIG.TYPE_MOVIE

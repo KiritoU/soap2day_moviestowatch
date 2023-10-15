@@ -270,18 +270,35 @@ class Moviestowatch:
         return "Default"
 
     def get_episode_server_from(self, links: list) -> list:
+        CUSTOM_SERVERS = [
+            "VidCloud",
+            "MultiStream",
+            "2embed",
+            "VS Player",
+            "MovPi",
+            "Gdrive",
+            "UpCloud",
+        ]
+
         removeLinks = []
         for removeLink in removeLinks:
             if removeLink in links:
                 links.remove(removeLink)
-        res = [
-            {
-                "server_name": self.get_server_name_from(link),
-                "server_type": "embed",
-                "server_link": link,
-            }
-            for link in links
-        ]
+
+        pick_server = 0
+
+        res = []
+        for link in links:
+            res.append(
+                {
+                    "server_name": CUSTOM_SERVERS[
+                        pick_server
+                    ],  # self.get_server_name_from(link),
+                    "server_type": "embed",
+                    "server_link": link,
+                }
+            )
+            pick_server = (pick_server + 1) % len(CUSTOM_SERVERS)
 
         return res
 
